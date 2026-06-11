@@ -113,6 +113,22 @@ footer .wrap p+p{margin-top:8px}
 .btn{border:1.5px solid var(--azure);background:#fff;color:var(--azure);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--body)}
 .btn.primary{background:var(--azure);color:#fff}
 .btn:hover{filter:brightness(.96)}
+/* field help text under inputs */
+.fldhelp{font-size:11.5px;color:var(--ink-soft);margin-top:5px;line-height:1.4}
+/* provider filter + badges */
+.provbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.provbar button{border:1.5px solid var(--line);background:#fff;border-radius:20px;padding:5px 14px;font-size:12.5px;font-family:var(--body);cursor:pointer;color:var(--ink-soft)}
+.provbar button.on{background:var(--azure-deep);color:#fff;border-color:var(--azure-deep);font-weight:600}
+.badge{display:inline-block;font-family:var(--mono);font-size:9.5px;letter-spacing:.05em;padding:1px 6px;border-radius:4px;vertical-align:middle;margin-left:6px;text-transform:uppercase}
+.badge.openai{background:#E6F4EC;color:#0A7C42}
+.badge.anthropic{background:#F3E9DD;color:#A85B1E}
+/* glossary */
+.gloss{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:560px){.gloss{grid-template-columns:1fr}}
+.gterm{border-left:3px solid var(--azure);padding:2px 0 2px 13px}
+.gterm dt{font-family:var(--display);font-weight:600;font-size:13.5px;color:var(--azure-deep);margin-bottom:3px}
+.gterm dd{font-size:12.5px;color:var(--ink-soft);line-height:1.5}
+.gterm dd .ex{display:block;margin-top:3px;font-family:var(--mono);font-size:11px;color:var(--green)}
 </style>
 </head>
 <body>
@@ -140,15 +156,19 @@ footer .wrap p+p{margin-top:8px}
       <div class="grid2">
         <label class="fld"><span class="lab">Consultas / mes</span>
           <input type="number" id="reqs" min="1" step="100" value="10000">
+          <span class="fldhelp">Cuántas veces al mes alguien usa la solución (una pregunta al chatbot, un documento a procesar, una tarea para el agente).</span>
         </label>
-        <label class="fld"><span class="lab">Llamadas al modelo por consulta <span title="Un agente hace varias llamadas: razonamiento + herramientas">ⓘ</span></span>
+        <label class="fld"><span class="lab">Llamadas al modelo por consulta</span>
           <input type="number" id="calls" min="1" step="1" value="1">
+          <span class="fldhelp">Un chatbot simple = 1. Un agente que razona y usa herramientas hace varias llamadas por cada consulta (típico: 3–6).</span>
         </label>
         <label class="fld"><span class="lab">Tokens de entrada / llamada</span>
           <input type="number" id="tin" min="0" step="100" value="1500">
+          <span class="fldhelp">Lo que <em>envías</em> al modelo: la pregunta + el contexto (instrucciones, documentos). 1.000 tokens ≈ 750 palabras.</span>
         </label>
         <label class="fld"><span class="lab">Tokens de salida / llamada</span>
           <input type="number" id="tout" min="0" step="50" value="500">
+          <span class="fldhelp">Lo que el modelo <em>responde</em>. Suele costar ~5× más que la entrada, así que respuestas largas encarecen rápido.</span>
         </label>
       </div>
       <div style="margin-top:16px">
@@ -160,26 +180,33 @@ footer .wrap p+p{margin-top:8px}
 
     <section class="card">
       <h2>3 · Modelo y despliegue</h2>
-      <p class="hint">Deployment en Europa: <em>Data Zone EU</em> garantiza procesamiento dentro de la UE; <em>Regional</em> fija un datacenter concreto (p. ej. Sweden Central, France Central).</p>
+      <p class="hint">Foundry te da modelos de OpenAI (GPT, o-series) y de Anthropic (Claude), entre otros. Filtra por proveedor y elige el que encaje con tu caso.</p>
+      <div class="provbar" id="provbar" role="group" aria-label="Filtrar por proveedor">
+        <button data-p="all" class="on">Todos</button>
+        <button data-p="openai">OpenAI</button>
+        <button data-p="anthropic">Anthropic · Claude</button>
+      </div>
       <div class="grid2">
         <label class="fld"><span class="lab">Modelo</span>
           <select id="model"></select>
         </label>
         <div class="fld">
-          <span class="lab" style="display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:5px">Tipo de deployment</span>
+          <span class="lab" style="display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:5px">Tipo de deployment (dónde se procesan los datos)</span>
           <div class="seg" id="deploy" role="group" aria-label="Tipo de deployment">
             <button data-d="global" class="on">Global</button>
             <button data-d="dz">Data Zone EU</button>
             <button data-d="reg">Regional EU</button>
           </div>
+          <span class="fldhelp" id="deployhelp"></span>
         </div>
       </div>
       <div style="margin-top:14px" class="grid2">
         <label class="toggle"><input type="checkbox" id="batch">
-          <span><span class="tt">Batch API (−50%)</span><br><span class="td">Trabajos asíncronos, respuesta en ~24 h. No válido para chat en tiempo real.</span></span>
+          <span><span class="tt">Batch API (−50%)</span><br><span class="td">Trabajos en lote, sin prisa: envías todo junto y recibes resultados en ~24 h a mitad de precio. No vale para chat en vivo.</span></span>
         </label>
         <label class="fld"><span class="lab">Extras fijos / mes (USD) — AI Search, Bing grounding, Logic Apps…</span>
           <input type="number" id="extras" min="0" step="50" value="0">
+          <span class="fldhelp">Coste de las herramientas que usa el agente (buscar en tus documentos, en la web, conectar con otras apps). Aparte de los tokens.</span>
         </label>
       </div>
       <p class="note" style="margin-top:14px">Los agentes nativos de Foundry Agent Service <strong>no tienen cargo por el agente en sí</strong>: pagas los tokens del modelo más las herramientas y conexiones que use (línea "extras").</p>
@@ -194,6 +221,25 @@ footer .wrap p+p{margin-top:8px}
           <tbody></tbody>
         </table>
       </div>
+    </section>
+
+    <section class="card">
+      <h2>Glosario para negocio</h2>
+      <p class="hint">Los términos clave en una frase, sin tecnicismos.</p>
+      <dl class="gloss">
+        <div class="gterm"><dt>Token</dt><dd>La unidad que se factura. Un trozo de palabra: 1.000 tokens ≈ 750 palabras. Pagas por los que envías y los que recibes.</dd></div>
+        <div class="gterm"><dt>Consulta</dt><dd>Una interacción completa del usuario con la solución: una pregunta, un documento, una tarea.</dd></div>
+        <div class="gterm"><dt>Llamada al modelo</dt><dd>Cada vez que se pregunta al modelo. Un chatbot hace 1 por consulta; un agente hace varias (razona, busca, decide).</dd></div>
+        <div class="gterm"><dt>Entrada / Salida</dt><dd>Entrada = lo que mandas (pregunta + contexto). Salida = lo que responde. La salida suele costar ~5× más.</dd></div>
+        <div class="gterm"><dt>Caché de prompt</dt><dd>Si repites las mismas instrucciones, se guardan y se cobran mucho más barato (hasta −90%). Ahorro automático.<span class="ex">Ej.: un prompt de sistema fijo en cada consulta.</span></dd></div>
+        <div class="gterm"><dt>Pay-as-you-go</dt><dd>Pagas solo por lo que consumes, sin compromiso. Ideal para empezar, pilotos y volumen variable.</dd></div>
+        <div class="gterm"><dt>Batch API (−50%)</dt><dd>Para trabajos sin urgencia: los envías en lote y los recibes en ~24 h a mitad de precio. Perfecto para procesar documentos de noche; no sirve para chat en directo.</dd></div>
+        <div class="gterm"><dt>PTU (capacidad reservada)</dt><dd>Reservas potencia fija y pagas por hora, consumas o no. Sale a cuenta con mucho volumen sostenido (~150–200 M tokens/mes).</dd></div>
+        <div class="gterm"><dt>Global</dt><dd>Microsoft procesa la petición en el mejor datacenter disponible del mundo. El más barato y rápido; sin garantía de país.</dd></div>
+        <div class="gterm"><dt>Data Zone EU</dt><dd>Garantiza que el procesamiento ocurre dentro de la Unión Europea. Cuesta un poco más; cumple residencia de datos en la UE.<span class="ex">Recomendado para datos de clientes europeos.</span></dd></div>
+        <div class="gterm"><dt>Regional EU</dt><dd>Fija un datacenter concreto (Sweden Central, France Central…). Máximo control y menor latencia local; el más caro.</dd></div>
+        <div class="gterm"><dt>Extras / herramientas</dt><dd>Lo que el agente usa además del modelo: buscar en tus documentos (AI Search), en la web (Bing), conectar apps (Logic Apps). Se factura aparte.</dd></div>
+      </dl>
     </section>
 
     <details class="prices">
@@ -235,7 +281,7 @@ footer .wrap p+p{margin-top:8px}
 
 <footer>
   <div class="wrap">
-    <p><strong>Fuentes:</strong> Azure OpenAI Service Pricing, Microsoft Foundry Pricing y Foundry Agent Service Pricing (azure.microsoft.com). Batch API = 50 % del precio Global Standard. PTU: capacidad reservada facturada por hora; punto de equilibrio típico ≈ 150–200 M tokens/mes sostenidos.</p>
+    <p><strong>Fuentes:</strong> Azure OpenAI Service Pricing, Microsoft Foundry Pricing y Foundry Agent Service Pricing (azure.microsoft.com). Los modelos de Anthropic (Claude) se consumen en Foundry vía <em>Serverless API</em> (pago por token, mismas tarifas que la API de Anthropic). Batch API = 50 % del precio Global Standard. PTU: capacidad reservada facturada por hora; punto de equilibrio típico ≈ 150–200 M tokens/mes sostenidos.</p>
     <p>Herramienta independiente sin afiliación con Microsoft. Hecha para estimaciones rápidas en conversaciones de negocio.</p>
   </div>
 </footer>
@@ -244,16 +290,34 @@ footer .wrap p+p{margin-top:8px}
 "use strict";
 // ---------- Tarifas oficiales (USD / 1M tokens, Global Standard, verificado jun-2026) ----------
 const DEFAULT_MODELS = [
- {id:"gpt-5",       name:"GPT-5",          fam:"Razonamiento tope de gama", in:1.25, cin:0.125, out:10.00},
- {id:"gpt-5-mini",  name:"GPT-5 mini",     fam:"Equilibrio precio/calidad", in:0.25, cin:0.025, out:2.00},
- {id:"gpt-5-nano",  name:"GPT-5 nano",     fam:"Tareas simples masivas",    in:0.05, cin:0.005, out:0.40},
- {id:"gpt-4.1",     name:"GPT-4.1",        fam:"Producción general",        in:2.00, cin:0.50,  out:8.00},
- {id:"gpt-4.1-mini",name:"GPT-4.1 mini",   fam:"Producción ligera",         in:0.40, cin:0.10,  out:1.60},
- {id:"gpt-4.1-nano",name:"GPT-4.1 nano",   fam:"Clasificación/extracción",  in:0.10, cin:0.025, out:0.40},
- {id:"gpt-4o",      name:"GPT-4o",         fam:"Multimodal clásico",        in:2.50, cin:1.25,  out:10.00},
- {id:"gpt-4o-mini", name:"GPT-4o mini",    fam:"Económico multimodal",      in:0.15, cin:0.075, out:0.60},
- {id:"o3",          name:"o3",             fam:"Razonamiento profundo",     in:2.00, cin:0.50,  out:8.00},
- {id:"o4-mini",     name:"o4-mini",        fam:"Razonamiento económico",    in:1.10, cin:0.275, out:4.40},
+ // ── OpenAI GPT-5 family ──────────────────────────────────────────────────
+ {id:"gpt-5",        prov:"openai", name:"GPT-5",           fam:"Flagship · razonamiento avanzado",      in:1.25,  cin:0.125, out:10.00},
+ {id:"gpt-5-mini",   prov:"openai", name:"GPT-5 mini",      fam:"Equilibrio coste/calidad",              in:0.25,  cin:0.025, out:2.00},
+ {id:"gpt-5-nano",   prov:"openai", name:"GPT-5 nano",      fam:"Tareas simples y masivas",              in:0.05,  cin:0.005, out:0.40},
+ {id:"gpt-5.5",      prov:"openai", name:"GPT-5.5",         fam:"Razonamiento + agentes producción",     in:3.50,  cin:0.35,  out:14.00},
+ // ── OpenAI GPT-4.x family ────────────────────────────────────────────────
+ {id:"gpt-4.1",      prov:"openai", name:"GPT-4.1",         fam:"Producción general · 1M ctx",           in:2.00,  cin:0.50,  out:8.00},
+ {id:"gpt-4.1-mini", prov:"openai", name:"GPT-4.1 mini",    fam:"Producción ligera · equilibrado",       in:0.40,  cin:0.10,  out:1.60},
+ {id:"gpt-4.1-nano", prov:"openai", name:"GPT-4.1 nano",    fam:"Clasificación y extracción",            in:0.10,  cin:0.025, out:0.40},
+ {id:"gpt-4o",       prov:"openai", name:"GPT-4o",          fam:"Multimodal · texto, imagen, audio",     in:2.50,  cin:1.25,  out:10.00},
+ {id:"gpt-4o-mini",  prov:"openai", name:"GPT-4o mini",     fam:"Multimodal económico",                  in:0.15,  cin:0.075, out:0.60},
+ {id:"gpt-4.5",      prov:"openai", name:"GPT-4.5 Preview", fam:"Conocimiento general amplio",           in:75.00, cin:37.50, out:150.00},
+ // ── OpenAI o-series (razonamiento) ──────────────────────────────────────
+ {id:"o3",           prov:"openai", name:"o3",              fam:"Razonamiento profundo · ciencia/código", in:2.00,  cin:0.50,  out:8.00},
+ {id:"o3-mini",      prov:"openai", name:"o3-mini",         fam:"Razonamiento ligero · STEM",            in:1.10,  cin:0.275, out:4.40},
+ {id:"o4-mini",      prov:"openai", name:"o4-mini",         fam:"Razonamiento económico · código/visual", in:1.10,  cin:0.275, out:4.40},
+ {id:"o1",           prov:"openai", name:"o1",              fam:"Razonamiento complejo (legacy)",        in:15.00, cin:7.50,  out:60.00},
+ {id:"o1-mini",      prov:"openai", name:"o1-mini",         fam:"Razonamiento ligero (legacy)",          in:3.00,  cin:1.50,  out:12.00},
+ // ── Anthropic Claude 4 (via Azure AI Foundry – Serverless API) ───────────
+ {id:"claude-opus-4-8",    prov:"anthropic", name:"Claude Opus 4.8",    fam:"Flagship · código y agentes · 1M ctx", in:5.00, cin:0.50, out:25.00},
+ {id:"claude-opus-4-7",    prov:"anthropic", name:"Claude Opus 4.7",    fam:"Agentes larga duración · 1M ctx",      in:5.00, cin:0.50, out:25.00},
+ {id:"claude-sonnet-4-6",  prov:"anthropic", name:"Claude Sonnet 4.6",  fam:"Equilibrio inteligencia/coste",        in:3.00, cin:0.30, out:15.00},
+ {id:"claude-sonnet-4-5",  prov:"anthropic", name:"Claude Sonnet 4.5",  fam:"Producción · análisis y código",       in:3.00, cin:0.30, out:15.00},
+ {id:"claude-haiku-4-5",   prov:"anthropic", name:"Claude Haiku 4.5",   fam:"Rápido y económico · alto volumen",    in:1.00, cin:0.10, out:5.00},
+ // ── Anthropic Claude 3 (legacy, aún disponibles) ────────────────────────
+ {id:"claude-opus-3-7",    prov:"anthropic", name:"Claude Opus 3.7",    fam:"Razonamiento extendido (legacy)",       in:15.00, cin:1.50, out:75.00},
+ {id:"claude-sonnet-3-7",  prov:"anthropic", name:"Claude Sonnet 3.7",  fam:"Hybrid reasoning (legacy)",            in:3.00,  cin:0.30, out:15.00},
+ {id:"claude-haiku-3-5",   prov:"anthropic", name:"Claude Haiku 3.5",   fam:"Visión + velocidad (legacy)",          in:0.80,  cin:0.08, out:4.00},
 ];
 let MODELS = JSON.parse(JSON.stringify(DEFAULT_MODELS));
 
@@ -266,10 +330,12 @@ const PRESETS = [
   v:{reqs:200000, calls:1, tin:3000, tout:400, cache:10, model:"gpt-4.1-nano", deploy:"global", batch:true, extras:0}},
  {id:"agent", t:"Agente con herramientas", d:"Multi-llamada · 20k tareas",
   v:{reqs:20000, calls:4, tin:2500, tout:700, cache:50, model:"gpt-5-mini", deploy:"dz", batch:false, extras:400}},
+ {id:"claude", t:"Agente de código (Claude)", d:"Anthropic · 8k tareas",
+  v:{reqs:8000, calls:5, tin:6000, tout:1500, cache:60, model:"claude-sonnet-4-6", deploy:"dz", batch:false, extras:300}},
  {id:"custom", t:"Personalizado", d:"Define tu escenario", v:null},
 ];
 
-const state = {reqs:10000, calls:1, tin:1500, tout:500, cache:30, model:"gpt-4o-mini", deploy:"global", batch:false, extras:0, preset:"chatbot"};
+const state = {reqs:10000, calls:1, tin:1500, tout:500, cache:30, model:"gpt-4o-mini", deploy:"global", batch:false, extras:0, preset:"chatbot", provFilter:"all"};
 
 const $ = id => document.getElementById(id);
 const fmt$ = n => n>=100 ? "$"+n.toLocaleString("es-ES",{maximumFractionDigits:0})
@@ -283,6 +349,13 @@ function deployMult(){
   return 1;
 }
 function deployLabel(){return state.deploy==="dz"?"Data Zone EU":state.deploy==="reg"?"Regional EU":"Global";}
+function deployHelp(){
+  if(state.deploy==="dz") return "Procesamiento garantizado dentro de la UE. Cumple residencia de datos europea. Coste algo mayor que Global.";
+  if(state.deploy==="reg") return "Datacenter concreto de Europa (Sweden Central, France Central…). Máximo control y menor latencia local; el más caro.";
+  return "Microsoft elige el mejor datacenter del mundo. El más barato y rápido; sin garantía de país de procesamiento.";
+}
+function provLabel(p){return p==="anthropic"?"Anthropic":p==="openai"?"OpenAI":p;}
+function filteredModels(){return state.provFilter==="all"?MODELS:MODELS.filter(m=>m.prov===state.provFilter);}
 
 function costFor(m){
   const mult = deployMult();
@@ -306,7 +379,8 @@ function render(){
   const mult = deployMult();
   const fx = parseFloat($("fx").value)||0.92;
 
-  $("r-meta").textContent = `${m.name} · ${deployLabel()}${state.batch?" · Batch":""}`;
+  $("r-meta").textContent = `${m.name} · ${provLabel(m.prov)} · ${deployLabel()}${state.batch?" · Batch":""}`;
+  $("deployhelp").textContent = deployHelp();
   const callsMonth = state.reqs*state.calls;
   const lines = [
     {k:`Entrada ${fmtN((callsMonth*state.tin/1e6)*(1-state.cache/100))} M tok`, v:fmt$(c.cIn)},
@@ -335,12 +409,12 @@ function render(){
   // comparison table
   const tb = document.querySelector("#cmp tbody");
   const selTotal = c.modelOnly;
-  tb.innerHTML = MODELS.map(x=>{
+  tb.innerHTML = filteredModels().map(x=>{
     const cx = costFor(x);
     const diff = selTotal>0 ? (cx.modelOnly-selTotal)/selTotal*100 : 0;
     const dTxt = x.id===state.model ? "—" : (diff>0?"+":"")+diff.toFixed(0)+"%";
     return `<tr class="${x.id===state.model?"sel":""}" data-m="${x.id}" tabindex="0" role="button" aria-label="Seleccionar ${x.name}">
-      <td>${x.name}<br><span class="fam">${x.fam}</span></td>
+      <td>${x.name}<span class="badge ${x.prov}">${provLabel(x.prov)}</span><br><span class="fam">${x.fam}</span></td>
       <td class="num">${x.in.toFixed(2)}</td><td class="num">${x.out.toFixed(2)}</td>
       <td class="num"><strong>${fmt$(cx.modelOnly + (+state.extras||0))}</strong></td>
       <td class="num" style="color:${diff>0?'var(--amber)':diff<0?'var(--green)':'inherit'}">${dTxt}</td></tr>`;
@@ -359,6 +433,10 @@ function applyPreset(p){
   document.querySelectorAll(".preset").forEach(b=>b.classList.toggle("active",b.dataset.p===p.id));
   if(!p.v){ render(); return; }
   Object.assign(state, p.v);
+  // reset provider filter so the preset's model is always selectable
+  state.provFilter="all";
+  document.querySelectorAll("#provbar button").forEach(x=>x.classList.toggle("on",x.dataset.p==="all"));
+  rebuildModelSelect();
   $("reqs").value=state.reqs; $("calls").value=state.calls; $("tin").value=state.tin; $("tout").value=state.tout;
   $("cache").value=state.cache; $("cacheval").textContent=state.cache+"%";
   $("model").value=state.model; $("batch").checked=state.batch; $("extras").value=state.extras;
@@ -366,19 +444,42 @@ function applyPreset(p){
   render();
 }
 
+function rebuildModelSelect(){
+  const groups = {openai:"OpenAI", anthropic:"Anthropic · Claude"};
+  let html = "";
+  Object.keys(groups).forEach(p=>{
+    if(state.provFilter!=="all" && state.provFilter!==p) return;
+    const ms = MODELS.filter(m=>m.prov===p);
+    if(!ms.length) return;
+    html += `<optgroup label="${groups[p]}">` +
+      ms.map(m=>`<option value="${m.id}">${m.name} — ${m.fam}</option>`).join("") +
+      `</optgroup>`;
+  });
+  $("model").innerHTML = html;
+  // if current model not in filter, pick first visible
+  if(!filteredModels().some(m=>m.id===state.model)){
+    state.model = filteredModels()[0].id;
+  }
+  $("model").value = state.model;
+}
+
 function buildUI(){
   // presets
   $("presets").innerHTML = PRESETS.map(p=>`<button class="preset ${p.id===state.preset?"active":""}" data-p="${p.id}"><span class="t">${p.t}</span><span class="d">${p.d}</span></button>`).join("");
   $("presets").querySelectorAll(".preset").forEach(b=>b.addEventListener("click",()=>applyPreset(PRESETS.find(x=>x.id===b.dataset.p))));
-  // model select
-  $("model").innerHTML = MODELS.map(m=>`<option value="${m.id}">${m.name} — ${m.fam}</option>`).join("");
-  $("model").value = state.model;
-  // price table
+  // model select (grouped by provider)
+  rebuildModelSelect();
+  // price table (grouped visually by provider)
   const pb = document.querySelector("#ptable tbody");
-  pb.innerHTML = MODELS.map((m,i)=>`<tr><td>${m.name}</td>
+  let lastProv = null;
+  pb.innerHTML = MODELS.map((m,i)=>{
+    let head = "";
+    if(m.prov!==lastProv){ lastProv=m.prov; head=`<tr><td colspan="4" style="background:#F0F4F8;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);padding:6px 8px">${provLabel(m.prov)}</td></tr>`; }
+    return head+`<tr><td>${m.name}</td>
     <td class="num"><input data-i="${i}" data-f="in" type="number" step="0.005" value="${m.in}"></td>
     <td class="num"><input data-i="${i}" data-f="cin" type="number" step="0.005" value="${m.cin}"></td>
-    <td class="num"><input data-i="${i}" data-f="out" type="number" step="0.01" value="${m.out}"></td></tr>`).join("");
+    <td class="num"><input data-i="${i}" data-f="out" type="number" step="0.01" value="${m.out}"></td></tr>`;
+  }).join("");
   pb.querySelectorAll("input").forEach(inp=>inp.addEventListener("input",()=>{
     MODELS[+inp.dataset.i][inp.dataset.f] = parseFloat(inp.value)||0; render();
   }));
@@ -398,6 +499,14 @@ document.querySelectorAll("#deploy button").forEach(b=>b.addEventListener("click
 }));
 ["multdz","multreg","fx"].forEach(id=>$(id).addEventListener("input",render));
 $("resetPrices").addEventListener("click",()=>{MODELS=JSON.parse(JSON.stringify(DEFAULT_MODELS)); buildUI(); render();});
+// provider filter
+document.querySelectorAll("#provbar button").forEach(b=>b.addEventListener("click",()=>{
+  state.provFilter=b.dataset.p;
+  document.querySelectorAll("#provbar button").forEach(x=>x.classList.toggle("on",x===b));
+  rebuildModelSelect();
+  state.model=$("model").value;
+  markCustom(); render();
+}));
 
 buildUI();
 applyPreset(PRESETS[0]);
