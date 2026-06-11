@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de costes · Microsoft Foundry / Azure OpenAI</title>
+<meta name="description" content="Estimador de costes de LLMs y agentes en Microsoft Foundry (Azure OpenAI): pay-as-you-go, Batch, Data Zone EU y Regional Europa.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F7FA;
+  --surface:#FFFFFF;
+  --ink:#0B1B2B;
+  --ink-soft:#43566B;
+  --line:#D9E2EC;
+  --azure:#0469C4;
+  --azure-deep:#0A2540;
+  --green:#1A7F4E;
+  --amber:#9A6700;
+  --amber-bg:#FFF6E0;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --body:'Inter',system-ui,sans-serif;
+  --display:'Space Grotesk','Inter',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55}
+a{color:var(--azure)}
+header.top{background:var(--azure-deep);color:#fff;padding:34px 20px 30px}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+header .wrap{padding:0}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#9DC9F0}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(26px,4vw,40px);line-height:1.12;margin:8px 0 10px;max-width:760px}
+.sub{color:#C4D6E8;max-width:680px;font-size:15px}
+.sub strong{color:#fff}
+main{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:26px;max-width:1180px;margin:26px auto 60px;padding:0 20px;align-items:start}
+@media (max-width:960px){main{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:22px}
+.card h2{font-family:var(--display);font-size:18px;font-weight:600;margin-bottom:4px}
+.card .hint{color:var(--ink-soft);font-size:13px;margin-bottom:16px}
+.stack>*+*{margin-top:22px}
+/* presets */
+.presets{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.preset{border:1.5px solid var(--line);border-radius:10px;background:#fff;padding:12px;text-align:left;cursor:pointer;font-family:var(--body);transition:border-color .15s, box-shadow .15s}
+.preset:hover{border-color:var(--azure)}
+.preset:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #7FB8E8;outline-offset:1px}
+.preset.active{border-color:var(--azure);box-shadow:0 0 0 3px #E0EEFA}
+.preset .t{font-weight:600;font-size:13.5px}
+.preset .d{font-size:12px;color:var(--ink-soft);margin-top:3px}
+/* form */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:560px){.grid2{grid-template-columns:1fr}}
+label.fld{display:block}
+label.fld span.lab{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:5px}
+input[type=number],select{width:100%;padding:9px 11px;border:1.5px solid var(--line);border-radius:8px;font-family:var(--mono);font-size:14px;background:#fff;color:var(--ink)}
+select{font-family:var(--body)}
+input[type=range]{width:100%;accent-color:var(--azure)}
+.rangeval{font-family:var(--mono);font-size:13px;color:var(--azure-deep)}
+.seg{display:flex;border:1.5px solid var(--line);border-radius:9px;overflow:hidden}
+.seg button{flex:1;border:none;background:#fff;padding:9px 6px;font-size:13px;font-family:var(--body);cursor:pointer;color:var(--ink-soft);border-right:1px solid var(--line)}
+.seg button:last-child{border-right:none}
+.seg button.on{background:var(--azure);color:#fff;font-weight:600}
+.toggle{display:flex;align-items:center;gap:10px;padding:11px 13px;border:1.5px solid var(--line);border-radius:9px;cursor:pointer}
+.toggle input{width:18px;height:18px;accent-color:var(--azure)}
+.toggle .tt{font-size:13.5px;font-weight:600}
+.toggle .td{font-size:12px;color:var(--ink-soft)}
+.note{background:var(--amber-bg);border:1px solid #EAD79A;border-radius:9px;padding:10px 13px;font-size:12.5px;color:var(--amber)}
+/* receipt — signature element */
+.receipt-wrap{position:sticky;top:18px}
+@media (max-width:960px){.receipt-wrap{position:static}}
+.receipt{background:#fff;border:1px solid var(--line);border-radius:12px 12px 0 0;padding:22px 22px 26px;font-family:var(--mono);box-shadow:0 10px 28px rgba(10,37,64,.10)}
+.receipt::after{content:"";display:block;height:14px;background:linear-gradient(135deg,#fff 7px,transparent 0),linear-gradient(225deg,#fff 7px,transparent 0);background-size:14px 14px;background-repeat:repeat-x;margin:0 -22px -26px}
+.r-head{text-align:center;border-bottom:1.5px dashed var(--line);padding-bottom:13px;margin-bottom:13px}
+.r-head .logo{font-family:var(--display);font-weight:700;font-size:15px;letter-spacing:.04em}
+.r-head .meta{font-size:11px;color:var(--ink-soft);margin-top:3px}
+.r-line{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:3.5px 0}
+.r-line .k{color:var(--ink-soft)}
+.r-line .v{font-weight:500;white-space:nowrap}
+.r-line.disc .v{color:var(--green)}
+.r-line.surch .v{color:var(--amber)}
+.r-sep{border-top:1.5px dashed var(--line);margin:10px 0}
+.r-total{display:flex;justify-content:space-between;align-items:baseline;padding-top:4px}
+.r-total .k{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft)}
+.r-total .v{font-family:var(--display);font-weight:700;font-size:30px;color:var(--azure-deep)}
+.r-eur{text-align:right;font-size:13px;color:var(--ink-soft);margin-top:2px}
+.r-unit{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-soft);margin-top:10px}
+.ptu-flag{margin-top:12px;font-family:var(--body);font-size:12.5px;border-radius:8px;padding:9px 12px;display:none}
+.ptu-flag.show{display:block}
+.ptu-flag.ok{background:#EAF6EF;border:1px solid #BFE3CD;color:var(--green)}
+.ptu-flag.warn{background:var(--amber-bg);border:1px solid #EAD79A;color:var(--amber)}
+/* comparison table */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);text-align:left;padding:8px 10px;border-bottom:1.5px solid var(--line)}
+th.num,td.num{text-align:right;font-family:var(--mono)}
+td{padding:8px 10px;border-bottom:1px solid #EDF2F7}
+tr.sel td{background:#EAF3FB;font-weight:600}
+tr:hover td{background:#F2F7FC}
+.fam{font-size:10.5px;font-family:var(--mono);color:var(--ink-soft)}
+/* prices editor */
+details.prices{border:1px solid var(--line);border-radius:12px;background:#fff}
+details.prices summary{cursor:pointer;padding:16px 22px;font-family:var(--display);font-weight:600;font-size:15px;list-style:none;display:flex;justify-content:space-between;align-items:center}
+details.prices summary::after{content:"+";font-size:20px;color:var(--azure)}
+details.prices[open] summary::after{content:"–"}
+details.prices .inner{padding:0 22px 20px}
+.pt input{width:84px;padding:5px 7px;border:1px solid var(--line);border-radius:6px;font-family:var(--mono);font-size:12.5px}
+.pt td{padding:5px 8px}
+footer{border-top:1px solid var(--line);padding:26px 20px 44px;color:var(--ink-soft);font-size:12.5px}
+footer .wrap p+p{margin-top:8px}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.btn{border:1.5px solid var(--azure);background:#fff;color:var(--azure);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--body)}
+.btn.primary{background:var(--azure);color:#fff}
+.btn:hover{filter:brightness(.96)}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="eyebrow">Microsoft Foundry · Azure OpenAI · Estimador</div>
+    <h1>¿Cuánto cuesta tu solución de IA al mes?</h1>
+    <p class="sub">Estima el coste de modelos y agentes en <strong>Microsoft Foundry</strong> con precios oficiales pay-as-you-go. Elige un caso de uso, ajusta el volumen y compara modelos, tipos de deployment y descuentos Batch — pensado para conversaciones de negocio.</p>
+  </div>
+</header>
+
+<main>
+  <!-- ============ CONFIG ============ -->
+  <div class="stack">
+    <section class="card">
+      <h2>1 · Caso de uso</h2>
+      <p class="hint">Plantillas con volúmenes típicos. Puedes ajustar todo después.</p>
+      <div class="presets" id="presets"></div>
+    </section>
+
+    <section class="card">
+      <h2>2 · Volumen de trabajo</h2>
+      <p class="hint">Regla rápida: 1.000 tokens ≈ 750 palabras. Una pregunta + contexto típico de chatbot ronda 1.000–2.000 tokens de entrada.</p>
+      <div class="grid2">
+        <label class="fld"><span class="lab">Consultas / mes</span>
+          <input type="number" id="reqs" min="1" step="100" value="10000">
+        </label>
+        <label class="fld"><span class="lab">Llamadas al modelo por consulta <span title="Un agente hace varias llamadas: razonamiento + herramientas">ⓘ</span></span>
+          <input type="number" id="calls" min="1" step="1" value="1">
+        </label>
+        <label class="fld"><span class="lab">Tokens de entrada / llamada</span>
+          <input type="number" id="tin" min="0" step="100" value="1500">
+        </label>
+        <label class="fld"><span class="lab">Tokens de salida / llamada</span>
+          <input type="number" id="tout" min="0" step="50" value="500">
+        </label>
+      </div>
+      <div style="margin-top:16px">
+        <span class="lab" style="font-size:12.5px;font-weight:600;color:var(--ink-soft)">Caché de prompt (entrada repetida): <span class="rangeval" id="cacheval">30%</span></span>
+        <input type="range" id="cache" min="0" max="90" step="5" value="30" aria-label="Porcentaje de tokens de entrada servidos desde caché">
+        <p class="hint" style="margin:6px 0 0">Los prompts de sistema e instrucciones repetidas se cobran a precio reducido si están cacheados.</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>3 · Modelo y despliegue</h2>
+      <p class="hint">Deployment en Europa: <em>Data Zone EU</em> garantiza procesamiento dentro de la UE; <em>Regional</em> fija un datacenter concreto (p. ej. Sweden Central, France Central).</p>
+      <div class="grid2">
+        <label class="fld"><span class="lab">Modelo</span>
+          <select id="model"></select>
+        </label>
+        <div class="fld">
+          <span class="lab" style="display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:5px">Tipo de deployment</span>
+          <div class="seg" id="deploy" role="group" aria-label="Tipo de deployment">
+            <button data-d="global" class="on">Global</button>
+            <button data-d="dz">Data Zone EU</button>
+            <button data-d="reg">Regional EU</button>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:14px" class="grid2">
+        <label class="toggle"><input type="checkbox" id="batch">
+          <span><span class="tt">Batch API (−50%)</span><br><span class="td">Trabajos asíncronos, respuesta en ~24 h. No válido para chat en tiempo real.</span></span>
+        </label>
+        <label class="fld"><span class="lab">Extras fijos / mes (USD) — AI Search, Bing grounding, Logic Apps…</span>
+          <input type="number" id="extras" min="0" step="50" value="0">
+        </label>
+      </div>
+      <p class="note" style="margin-top:14px">Los agentes nativos de Foundry Agent Service <strong>no tienen cargo por el agente en sí</strong>: pagas los tokens del modelo más las herramientas y conexiones que use (línea "extras").</p>
+    </section>
+
+    <section class="card">
+      <h2>Comparativa de modelos para tu carga</h2>
+      <p class="hint">Mismo volumen, mismo deployment. Haz clic en una fila para seleccionar el modelo.</p>
+      <div style="overflow-x:auto">
+        <table id="cmp">
+          <thead><tr><th>Modelo</th><th class="num">$/1M in</th><th class="num">$/1M out</th><th class="num">Coste/mes</th><th class="num">vs. seleccionado</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <details class="prices">
+      <summary>Tarifas aplicadas (USD por 1M tokens) — editable</summary>
+      <div class="inner">
+        <p class="hint">Precios Global Standard verificados en junio 2026 sobre la página oficial de Azure. Si Microsoft los cambia, edítalos aquí y la calculadora se actualiza al instante. Recargos aproximados sobre Global: Data Zone ×<input class="pt-mult" id="multdz" type="number" step="0.01" value="1.10" style="width:64px;padding:3px 6px;border:1px solid var(--line);border-radius:6px;font-family:var(--mono)">, Regional ×<input class="pt-mult" id="multreg" type="number" step="0.01" value="1.20" style="width:64px;padding:3px 6px;border:1px solid var(--line);border-radius:6px;font-family:var(--mono)">. Tipo de cambio €/$ <input id="fx" type="number" step="0.01" value="0.92" style="width:64px;padding:3px 6px;border:1px solid var(--line);border-radius:6px;font-family:var(--mono)">.</p>
+        <div style="overflow-x:auto">
+          <table class="pt" id="ptable">
+            <thead><tr><th>Modelo</th><th class="num">Entrada</th><th class="num">Entrada caché</th><th class="num">Salida</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="btn-row">
+          <button class="btn" id="resetPrices">Restaurar tarifas oficiales</button>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <!-- ============ RECEIPT ============ -->
+  <div class="receipt-wrap">
+    <div class="receipt" aria-live="polite">
+      <div class="r-head">
+        <div class="logo">TICKET DE COSTE ESTIMADO</div>
+        <div class="meta" id="r-meta">—</div>
+      </div>
+      <div id="r-lines"></div>
+      <div class="r-sep"></div>
+      <div class="r-total"><span class="k">Total / mes</span><span class="v" id="r-total">$0</span></div>
+      <div class="r-eur" id="r-eur">≈ 0 € / mes</div>
+      <div class="r-unit"><span id="r-perq">$0 / consulta</span><span id="r-tok">0 M tokens/mes</span></div>
+      <div class="ptu-flag" id="ptuflag"></div>
+    </div>
+    <div class="card" style="border-radius:0 0 12px 12px;border-top:none;font-size:12.5px;color:var(--ink-soft)">
+      Estimación orientativa. Los despliegues reales suelen añadir un 15–30 % de costes de plataforma (Log Analytics, redes, soporte). Verifica siempre en la <a href="https://azure.microsoft.com/pricing/details/microsoft-foundry/" target="_blank" rel="noopener">página oficial de precios</a> y la <a href="https://azure.microsoft.com/pricing/calculator/" target="_blank" rel="noopener">Azure Pricing Calculator</a>.
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p><strong>Fuentes:</strong> Azure OpenAI Service Pricing, Microsoft Foundry Pricing y Foundry Agent Service Pricing (azure.microsoft.com). Batch API = 50 % del precio Global Standard. PTU: capacidad reservada facturada por hora; punto de equilibrio típico ≈ 150–200 M tokens/mes sostenidos.</p>
+    <p>Herramienta independiente sin afiliación con Microsoft. Hecha para estimaciones rápidas en conversaciones de negocio.</p>
+  </div>
+</footer>
+
+<script>
+"use strict";
+// ---------- Tarifas oficiales (USD / 1M tokens, Global Standard, verificado jun-2026) ----------
+const DEFAULT_MODELS = [
+ {id:"gpt-5",       name:"GPT-5",          fam:"Razonamiento tope de gama", in:1.25, cin:0.125, out:10.00},
+ {id:"gpt-5-mini",  name:"GPT-5 mini",     fam:"Equilibrio precio/calidad", in:0.25, cin:0.025, out:2.00},
+ {id:"gpt-5-nano",  name:"GPT-5 nano",     fam:"Tareas simples masivas",    in:0.05, cin:0.005, out:0.40},
+ {id:"gpt-4.1",     name:"GPT-4.1",        fam:"Producción general",        in:2.00, cin:0.50,  out:8.00},
+ {id:"gpt-4.1-mini",name:"GPT-4.1 mini",   fam:"Producción ligera",         in:0.40, cin:0.10,  out:1.60},
+ {id:"gpt-4.1-nano",name:"GPT-4.1 nano",   fam:"Clasificación/extracción",  in:0.10, cin:0.025, out:0.40},
+ {id:"gpt-4o",      name:"GPT-4o",         fam:"Multimodal clásico",        in:2.50, cin:1.25,  out:10.00},
+ {id:"gpt-4o-mini", name:"GPT-4o mini",    fam:"Económico multimodal",      in:0.15, cin:0.075, out:0.60},
+ {id:"o3",          name:"o3",             fam:"Razonamiento profundo",     in:2.00, cin:0.50,  out:8.00},
+ {id:"o4-mini",     name:"o4-mini",        fam:"Razonamiento económico",    in:1.10, cin:0.275, out:4.40},
+];
+let MODELS = JSON.parse(JSON.stringify(DEFAULT_MODELS));
+
+const PRESETS = [
+ {id:"chatbot", t:"Chatbot interno", d:"FAQ RRHH/IT · 10k consultas",
+  v:{reqs:10000, calls:1, tin:1500, tout:500, cache:40, model:"gpt-4o-mini", deploy:"global", batch:false, extras:0}},
+ {id:"rag", t:"RAG atención cliente", d:"Con búsqueda documental · 50k",
+  v:{reqs:50000, calls:1, tin:4000, tout:600, cache:30, model:"gpt-4.1-mini", deploy:"dz", batch:false, extras:250}},
+ {id:"docs", t:"Procesado de documentos", d:"Batch nocturno · 200k docs",
+  v:{reqs:200000, calls:1, tin:3000, tout:400, cache:10, model:"gpt-4.1-nano", deploy:"global", batch:true, extras:0}},
+ {id:"agent", t:"Agente con herramientas", d:"Multi-llamada · 20k tareas",
+  v:{reqs:20000, calls:4, tin:2500, tout:700, cache:50, model:"gpt-5-mini", deploy:"dz", batch:false, extras:400}},
+ {id:"custom", t:"Personalizado", d:"Define tu escenario", v:null},
+];
+
+const state = {reqs:10000, calls:1, tin:1500, tout:500, cache:30, model:"gpt-4o-mini", deploy:"global", batch:false, extras:0, preset:"chatbot"};
+
+const $ = id => document.getElementById(id);
+const fmt$ = n => n>=100 ? "$"+n.toLocaleString("es-ES",{maximumFractionDigits:0})
+            : n>=1 ? "$"+n.toLocaleString("es-ES",{minimumFractionDigits:2,maximumFractionDigits:2})
+            : "$"+n.toLocaleString("es-ES",{minimumFractionDigits:3,maximumFractionDigits:4});
+const fmtN = n => n.toLocaleString("es-ES",{maximumFractionDigits:1});
+
+function deployMult(){
+  if(state.deploy==="dz") return parseFloat($("multdz").value)||1.10;
+  if(state.deploy==="reg") return parseFloat($("multreg").value)||1.20;
+  return 1;
+}
+function deployLabel(){return state.deploy==="dz"?"Data Zone EU":state.deploy==="reg"?"Regional EU":"Global";}
+
+function costFor(m){
+  const mult = deployMult();
+  const batch = state.batch ? 0.5 : 1;
+  const callsMonth = state.reqs * state.calls;
+  const inTok  = callsMonth * state.tin  / 1e6;
+  const outTok = callsMonth * state.tout / 1e6;
+  const cachedTok = inTok * state.cache/100;
+  const freshTok  = inTok - cachedTok;
+  const cIn    = freshTok  * m.in  * mult * batch;
+  const cCache = cachedTok * m.cin * mult * batch;
+  const cOut   = outTok    * m.out * mult * batch;
+  return {cIn, cCache, cOut, tokens: inTok+outTok,
+          total: cIn + cCache + cOut + (+state.extras||0),
+          modelOnly: cIn + cCache + cOut};
+}
+
+function render(){
+  const m = MODELS.find(x=>x.id===state.model) || MODELS[0];
+  const c = costFor(m);
+  const mult = deployMult();
+  const fx = parseFloat($("fx").value)||0.92;
+
+  $("r-meta").textContent = `${m.name} · ${deployLabel()}${state.batch?" · Batch":""}`;
+  const callsMonth = state.reqs*state.calls;
+  const lines = [
+    {k:`Entrada ${fmtN((callsMonth*state.tin/1e6)*(1-state.cache/100))} M tok`, v:fmt$(c.cIn)},
+    state.cache>0 ? {k:`Entrada caché ${fmtN((callsMonth*state.tin/1e6)*(state.cache/100))} M tok`, v:fmt$(c.cCache), cls:"disc"} : null,
+    {k:`Salida ${fmtN(callsMonth*state.tout/1e6)} M tok`, v:fmt$(c.cOut)},
+    mult>1 ? {k:`Recargo ${deployLabel()} (incl.)`, v:`×${mult.toFixed(2)}`, cls:"surch"} : null,
+    state.batch ? {k:"Descuento Batch (incl.)", v:"−50%", cls:"disc"} : null,
+    (+state.extras||0)>0 ? {k:"Herramientas / extras", v:fmt$(+state.extras)} : null,
+  ].filter(Boolean);
+  $("r-lines").innerHTML = lines.map(l=>`<div class="r-line ${l.cls||""}"><span class="k">${l.k}</span><span class="v">${l.v}</span></div>`).join("");
+  $("r-total").textContent = fmt$(c.total);
+  $("r-eur").textContent = "≈ "+(c.total*fx).toLocaleString("es-ES",{maximumFractionDigits:0})+" € / mes";
+  $("r-perq").textContent = fmt$(c.total/Math.max(state.reqs,1))+" / consulta";
+  $("r-tok").textContent = fmtN(c.tokens)+" M tokens/mes";
+
+  // PTU hint
+  const flag = $("ptuflag");
+  if(c.tokens >= 150){
+    flag.className = "ptu-flag show warn";
+    flag.innerHTML = `<strong>Considera PTU:</strong> con ${fmtN(c.tokens)} M tokens/mes superas el punto de equilibrio típico (~150–200 M). La capacidad reservada con reserva anual puede ahorrar hasta un 70 %.`;
+  } else if(c.tokens >= 75){
+    flag.className = "ptu-flag show ok";
+    flag.innerHTML = `Pay-as-you-go es adecuado. Si el volumen se duplica, evalúa PTU (equilibrio ~150–200 M tokens/mes).`;
+  } else { flag.className = "ptu-flag"; }
+
+  // comparison table
+  const tb = document.querySelector("#cmp tbody");
+  const selTotal = c.modelOnly;
+  tb.innerHTML = MODELS.map(x=>{
+    const cx = costFor(x);
+    const diff = selTotal>0 ? (cx.modelOnly-selTotal)/selTotal*100 : 0;
+    const dTxt = x.id===state.model ? "—" : (diff>0?"+":"")+diff.toFixed(0)+"%";
+    return `<tr class="${x.id===state.model?"sel":""}" data-m="${x.id}" tabindex="0" role="button" aria-label="Seleccionar ${x.name}">
+      <td>${x.name}<br><span class="fam">${x.fam}</span></td>
+      <td class="num">${x.in.toFixed(2)}</td><td class="num">${x.out.toFixed(2)}</td>
+      <td class="num"><strong>${fmt$(cx.modelOnly + (+state.extras||0))}</strong></td>
+      <td class="num" style="color:${diff>0?'var(--amber)':diff<0?'var(--green)':'inherit'}">${dTxt}</td></tr>`;
+  }).join("");
+  tb.querySelectorAll("tr").forEach(tr=>{
+    const go = ()=>{state.model=tr.dataset.m; $("model").value=state.model; markCustom(); render();};
+    tr.addEventListener("click",go);
+    tr.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go();}});
+  });
+}
+
+function markCustom(){ state.preset="custom"; document.querySelectorAll(".preset").forEach(b=>b.classList.toggle("active",b.dataset.p==="custom")); }
+
+function applyPreset(p){
+  state.preset = p.id;
+  document.querySelectorAll(".preset").forEach(b=>b.classList.toggle("active",b.dataset.p===p.id));
+  if(!p.v){ render(); return; }
+  Object.assign(state, p.v);
+  $("reqs").value=state.reqs; $("calls").value=state.calls; $("tin").value=state.tin; $("tout").value=state.tout;
+  $("cache").value=state.cache; $("cacheval").textContent=state.cache+"%";
+  $("model").value=state.model; $("batch").checked=state.batch; $("extras").value=state.extras;
+  document.querySelectorAll("#deploy button").forEach(b=>b.classList.toggle("on",b.dataset.d===state.deploy));
+  render();
+}
+
+function buildUI(){
+  // presets
+  $("presets").innerHTML = PRESETS.map(p=>`<button class="preset ${p.id===state.preset?"active":""}" data-p="${p.id}"><span class="t">${p.t}</span><span class="d">${p.d}</span></button>`).join("");
+  $("presets").querySelectorAll(".preset").forEach(b=>b.addEventListener("click",()=>applyPreset(PRESETS.find(x=>x.id===b.dataset.p))));
+  // model select
+  $("model").innerHTML = MODELS.map(m=>`<option value="${m.id}">${m.name} — ${m.fam}</option>`).join("");
+  $("model").value = state.model;
+  // price table
+  const pb = document.querySelector("#ptable tbody");
+  pb.innerHTML = MODELS.map((m,i)=>`<tr><td>${m.name}</td>
+    <td class="num"><input data-i="${i}" data-f="in" type="number" step="0.005" value="${m.in}"></td>
+    <td class="num"><input data-i="${i}" data-f="cin" type="number" step="0.005" value="${m.cin}"></td>
+    <td class="num"><input data-i="${i}" data-f="out" type="number" step="0.01" value="${m.out}"></td></tr>`).join("");
+  pb.querySelectorAll("input").forEach(inp=>inp.addEventListener("input",()=>{
+    MODELS[+inp.dataset.i][inp.dataset.f] = parseFloat(inp.value)||0; render();
+  }));
+}
+
+// listeners
+["reqs","calls","tin","tout","extras"].forEach(id=>$(id).addEventListener("input",()=>{
+  state[id] = parseFloat($(id).value)||0; markCustom(); render();
+}));
+$("cache").addEventListener("input",()=>{state.cache=+$("cache").value; $("cacheval").textContent=state.cache+"%"; markCustom(); render();});
+$("model").addEventListener("change",()=>{state.model=$("model").value; markCustom(); render();});
+$("batch").addEventListener("change",()=>{state.batch=$("batch").checked; markCustom(); render();});
+document.querySelectorAll("#deploy button").forEach(b=>b.addEventListener("click",()=>{
+  state.deploy=b.dataset.d;
+  document.querySelectorAll("#deploy button").forEach(x=>x.classList.toggle("on",x===b));
+  markCustom(); render();
+}));
+["multdz","multreg","fx"].forEach(id=>$(id).addEventListener("input",render));
+$("resetPrices").addEventListener("click",()=>{MODELS=JSON.parse(JSON.stringify(DEFAULT_MODELS)); buildUI(); render();});
+
+buildUI();
+applyPreset(PRESETS[0]);
+</script>
+</body>
+</html>
