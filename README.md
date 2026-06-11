@@ -314,27 +314,6 @@ Y abre:
 http://localhost:8000
 ```
 
-## Publicación con GitHub Pages
-
-Estructura recomendada:
-
-```text
-.
-├── index.html
-├── README.md
-└── LICENSE
-```
-
-Para publicar:
-
-1. Ve a **Settings**.
-2. Entra en **Pages**.
-3. Selecciona **Deploy from a branch**.
-4. Elige la rama `main`.
-5. Elige `/ (root)`.
-6. Guarda y espera a que termine el workflow de Pages.
-
-GitHub Pages sirve el archivo llamado exactamente `index.html` desde la fuente configurada.
 
 ## Privacidad y seguridad
 
@@ -352,24 +331,6 @@ No publiques:
 
 Para uso privado, mantén el repositorio privado y abre el HTML localmente, o publícalo en una plataforma interna con autenticación.
 
-## Estructura recomendada del repositorio
-
-Para la rama publicada, se recomienda dejar únicamente:
-
-```text
-LICENSE
-README.md
-index.html
-```
-
-Evita mantener copias antiguas como:
-
-```text
-index (1).html
-preview.html
-```
-
-salvo que estén documentadas como versiones de prueba o histórico.
 
 ## Roadmap sugerido
 
